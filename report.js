@@ -3,12 +3,15 @@
 // ==========================================
 import { state, CONSTANTS } from './store.js';
 
-// 修正 1: utils 只匯入它有的
-import { esc, toNum, termToLabel } from './utils.js';
-
-// 修正 2: termKeyOfRow 和 termOrder 要從 logic.js 匯入
+// ✅ 修正 1: utils.js 只匯入它有的東西
 import { 
-    normalizeStatus, statusRank, baseCreditSplit, 
+    esc, toNum, termToLabel 
+} from './utils.js';
+
+// ✅ 修正 2: termKeyOfRow 和 termOrder 必須從 logic.js 匯入！
+import { 
+    normalizeStatus, statusRank, 
+    baseCreditSplit, 
     calcCreditsForSummary, getAverageStats,
     termKeyOfRow, termOrder 
 } from './logic.js';
