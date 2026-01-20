@@ -1,17 +1,23 @@
 // ==========================================
-// view.js - 負責所有畫面渲染 (View Layer)
+// view.js - 負責所有畫面渲染 (View Layer) - 修正版
 // ==========================================
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
     normalizeStatus, baseCreditSum, baseCreditSplit, advCreditSum, 
     calcCreditsForSummary, getAverageStats, currentCapWarnMsg,
-    getAllTakenCoursesForExam, computeJudgeEligibility, computeLawyerEligibility,
+    computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesForExam,
     termOrder, termKeyOfRow
 } from './logic.js';
 
 // DOM Helper
 export const $ = (id) => document.getElementById(id);
+
+// 🔴 修正：直接在這裡定義，不依賴外部傳入
+export function getAdmissionYear() {
+    const el = document.querySelector('input[name="admissionYear"]:checked');
+    return (el?.value || "114").trim();
+}
 
 // --- Component Helpers ---
 
@@ -49,7 +55,6 @@ function deptLabel(program) {
 export function renderStudentIdOptions() {
     const elId = $("studentId");
     if (!elId) return;
-    // 檢查是否已經有選項，避免重複渲染導致使用體驗不佳
     if (elId.options.length > 1) {
         const full = String(state.studentId || "").trim();
         const suffix = full.match(/(\d{2})$/)?.[1] || "";
@@ -69,7 +74,8 @@ export function renderStudentIdOptions() {
     if (suffix) elId.value = suffix;
 }
 
-export function renderTermOptionsFromCourses(getAdmissionYear) {
+// 🔴 修正：不再需要參數，直接呼叫內部的 getAdmissionYear()
+export function renderTermOptionsFromCourses() {
     const pickTerm = $("pickTerm");
     const extTerm = $("extTerm");
     const avgTermPick = $("avgTermPick");
@@ -84,6 +90,7 @@ export function renderTermOptionsFromCourses(getAdmissionYear) {
     }).filter(Boolean))).filter(t => /^\d{3}[12]$/.test(String(t)));
 
     if (!terms.length) {
+        // 這裡直接用內部的 getAdmissionYear()
         const y = String(getAdmissionYear()).slice(0, 3);
         terms = [`${y}1`, `${y}2`];
     }
@@ -97,7 +104,6 @@ export function renderTermOptionsFromCourses(getAdmissionYear) {
 
     const html = terms.map(t => `<option value="${esc(t)}">${esc(termToLabel(t))}</option>`).join("");
     
-    // 只在innerHTML為空或選項數量不對時才重繪，避免卡頓
     if (pickTerm.innerHTML.length < 10 || pickTerm.options.length !== terms.length) {
         pickTerm.innerHTML = html;
         if (extTerm) extTerm.innerHTML = html;
@@ -134,7 +140,6 @@ export function renderCoursePicker() {
     if ($("levelWrap")) $("levelWrap").classList.toggle("hidden", !isLLM);
     if ($("langWrap")) $("langWrap").classList.toggle("hidden", !isGrad);
 
-    // LLM Summer Logic
     if (isLLM) {
         const allowSummer = /^\d{3}1$/.test(term);
         const SUMMER_VAL = "summer_adv";
@@ -399,73 +404,4 @@ export function refreshExamAnalysisUI() {
         $("lawyerDetails").innerHTML = `
             <div class="mb-2 font-semibold">必含科目：${l.mustOk ? "✅ 符合" : "❌ 未符合"}</div>
             <div class="text-xs text-slate-700">民法(${l.civil.ok?"OK":"NO"})、刑法(${l.criminal.ok?"OK":"NO"})、訴訟法(${l.mustOk && (l.ms.counted||l.xs.counted) ? "OK":"NO"})</div>
-            <div class="mt-2 font-semibold">總學分：${l.totalCountedCredits} / 20</div>
-            <div class="font-semibold">總學科：${l.disciplineCount} / 7</div>
-        `;
-    }
-}
-
-export function initExternalDeptDropdown() {
-    const sel = $("extDept");
-    if (!sel || !externalDeptMapByCode) return;
-    if (sel.tagName !== "SELECT") {
-        const newSel = document.createElement("select");
-        newSel.id = sel.id; newSel.className = sel.className;
-        sel.parentNode.replaceChild(newSel, sel);
-    }
-    // Only render if needed
-    if (sel.options.length > 1 && sel.innerHTML.includes("optgroup")) return;
-
-    const grouped = {};
-    for (const [code, val] of externalDeptMapByCode.entries()) {
-        if (!grouped[val.college]) grouped[val.college] = [];
-        grouped[val.college].push({code, name: val.name});
-    }
-    const html = [`<option value="" disabled selected>請選擇系所</option>`];
-    Object.keys(grouped).sort().forEach(col => {
-        html.push(`<optgroup label="${esc(col)}">`);
-        grouped[col].sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
-            html.push(`<option value="${item.code}">${esc(item.name)}</option>`);
-        });
-        html.push(`</optgroup>`);
-    });
-    $(sel.id).innerHTML = html.join("");
-}
-
-// 🔴 主渲染函數
-export function renderAll(getAdmissionYear) {
-    if ($("studentName")) $("studentName").value = state.studentName;
-    if ($("note")) $("note").value = state.note;
-    
-    // Student ID Sync
-    renderStudentIdOptions();
-    
-    if ($("eligibleExempt")) $("eligibleExempt").checked = state.eligibleExempt;
-    if ($("eligibleBox")) $("eligibleBox").classList.toggle("hidden", !state.eligibleExempt);
-    if ($("creditTransferEligible")) $("creditTransferEligible").checked = state.creditTransferEligible;
-    if ($("transferAddWrap")) $("transferAddWrap").classList.toggle("hidden", !state.creditTransferEligible);
-
-    renderTermOptionsFromCourses(getAdmissionYear);
-    renderCoursePicker();
-    renderFullCourseList();
-    renderTable("baseTbody", state.base, "base");
-    renderTable("advTbody", state.adv, "adv");
-
-    renderExternalCreditsList("ccTbody", "creditClass", "delCreditClass");
-    renderExternalCreditsList("examExtTbody", "schoolCredit", "delExamExt");
-    renderExternalCreditsList("externalCreditsTbody", null, "delExternalCredit");
-
-    refreshStats();
-    refreshExamAnalysisUI();
-
-    if ($("externalAddWrap")) $("externalAddWrap").classList.toggle("hidden", !state.eligibleExempt || !state.externalCourseEnabled);
-    if ($("externalCourseEnabled")) $("externalCourseEnabled").checked = state.externalCourseEnabled;
-    
-    // Transfer Base Name Picker
-    if ($("trNameBase") && $("trNameBase").options.length <= 1) {
-        const opts = [`<option value="">(請選擇)</option>`, ...Base_CLASS_SUBJECTS_114.map(s=>`<option value="${s}">${s}</option>`)];
-        $("trNameBase").innerHTML = opts.join("");
-    }
-    
-    initExternalDeptDropdown();
-}
+            <div class="mt-2 font-semibold">總學分：${l.totalCountedCredits} /
