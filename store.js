@@ -280,3 +280,17 @@ export async function initExternalDeptCsv() {
         return { byCollege: new Map() };
     }
 }
+// 在 store.js 的最底端加上這一段：
+export const CONSTANTS = {
+  ALL_COURSES_CSV_URL,
+  EXTERNAL_DEPT_CSV_URL,
+  STORAGE_KEY,
+  GRAD_CREDITS,
+  CAP_CROSS_TOTAL,
+  CAP_EXTERNAL,
+  CAP_LANG,
+  STATUS_DONE,
+  STATUS_PLANNED,
+  CREDIT_CLASS_SUBJECTS,
+  CREDIT_CLASS_FIXED_CREDIT
+};
