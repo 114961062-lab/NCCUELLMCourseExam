@@ -1,5 +1,5 @@
 // ==========================================
-// ui.js - 事件控制器 (Controller Layer)
+// ui.js - 事件控制器 (Controller Layer) - 修正版
 // ==========================================
 import { state, save, resetState, allCourses, externalDeptMapByCode, CONSTANTS } from './store.js';
 import { newUUID, clampGradeValue, termOfCourse, yearOfCourse, termToLabel, sanitizeDigits3, sanitizeAlnum9 } from './utils.js';
@@ -9,17 +9,12 @@ import {
 } from './logic.js';
 import { buildPrintHtml } from './report.js';
 
-// 🔴 關鍵：匯入 View 層
-import { $, renderAll } from './view.js';
+// 匯入 View 層 (以及內建的 getAdmissionYear)
+import { $, renderAll, getAdmissionYear } from './view.js';
 
-// --- Helpers ---
-function getAdmissionYear() {
-    const el = document.querySelector('input[name="admissionYear"]:checked');
-    return (el?.value || "114").trim();
-}
-
+// 🔴 移除：ui.js 不需要自己定義 getAdmissionYear 了，直接用 view.js 的
 function composeStudentIdFull() {
-    const ay = getAdmissionYear();
+    const ay = getAdmissionYear(); // 直接呼叫 view.js 匯出的
     const suffix = ($("studentId")?.value || "").trim();
     if (!suffix) return "";
     return `${ay}9610${suffix}`;
@@ -48,7 +43,6 @@ function addSelectedCourse() {
         const status = inferStatusByTermKey(termKey);
         const display = `${termToLabel(termKey)} ${c.name}`;
         
-        // Dup check
         const dup = [...state.base, ...state.adv].some(r => r.courseRefId === Number(c.id));
         if (dup) return;
 
@@ -70,7 +64,7 @@ function addSelectedCourse() {
         addedCount++;
     });
 
-    if (addedCount > 0) { save(); renderAll(getAdmissionYear); } 
+    if (addedCount > 0) { save(); renderAll(); } // 🔴 修正：不再傳參數
     else { alert("未新增課程 (可能已存在)。"); }
 }
 
@@ -92,7 +86,7 @@ function addExternalToAdvanced() {
     };
     guardCrossCaps(row); state.adv.push(row); state.courses.push(row);
     $("extName").value = ""; $("extCode").value = "";
-    save(); renderAll(getAdmissionYear);
+    save(); renderAll(); // 🔴 修正：不再傳參數
 }
 
 function addTransferCourse() {
@@ -114,14 +108,13 @@ function addTransferCourse() {
         row.track = "adv"; state.adv.push(row);
     }
     state.courses.push(row);
-    save(); renderAll(getAdmissionYear);
+    save(); renderAll(); // 🔴 修正：不再傳參數
 }
 
 // --- Bind Events ---
 
 export function bindEvents() {
-    // 綁定渲染函數，方便初始化呼叫
-    const doRender = () => renderAll(getAdmissionYear);
+    const doRender = () => renderAll();
 
     document.addEventListener("click", (e) => {
         const btn = e.target.closest("button[data-act]");
@@ -146,11 +139,7 @@ export function bindEvents() {
     bindInput("note", "note");
     
     ["pickProgram", "pickTerm", "pickLevel", "pickLangLevel"].forEach(id => {
-        if ($(id)) $(id).addEventListener("change", () => {
-            // 這些只需要部分重繪，但為了簡單，我們呼叫 renderCoursePicker
-            // 這裡直接呼叫 doRender 雖然 heavy 但最安全
-            doRender();
-        });
+        if ($(id)) $(id).addEventListener("change", doRender);
     });
 
     if ($("btnAddCourse")) $("btnAddCourse").addEventListener("click", addSelectedCourse);
@@ -175,12 +164,11 @@ export function bindEvents() {
 
     // Print
     if ($("btnBuild")) $("btnBuild").addEventListener("click", () => {
-        const html = buildPrintHtml(getAdmissionYear());
+        const html = buildPrintHtml(getAdmissionYear()); // 這裡還是需要傳入
         const win = window.open("", "_blank");
         if(win) { win.document.write(html); win.document.close(); win.print(); }
     });
     
-    // Reset
     if ($("btnReset")) $("btnReset").addEventListener("click", () => {
         if(confirm("確定重置?")) {
             resetState();
@@ -189,7 +177,6 @@ export function bindEvents() {
         }
     });
 
-    // Inputs in tables
     document.addEventListener("change", (e) => {
         const el = e.target;
         if (el.matches("input[data-k], select[data-k]")) {
@@ -210,7 +197,6 @@ export function bindEvents() {
         }
     });
     
-    // Ext Dept logic
     if($("extDept")) $("extDept").addEventListener("change", () => {
         if($("extDeptCode")) $("extDeptCode").value = $("extDept").value;
     });
@@ -225,12 +211,5 @@ export function bindEvents() {
     });
 }
 
-// 匯出 renderAll 讓 main.js 呼叫初始化
+// 匯出 renderAll 供 main 使用
 export { renderAll } from './view.js';
-// 為了讓 main.js 初始化時能傳入參數，我們也可以在這裡封裝一下，但直接匯出 view.js 的比較簡單
-// 注意：main.js 呼叫 renderAll() 時不會帶參數， view.js 的 renderAll 有預設行為嗎？
-// view.js 的 renderAll(getAdmissionYear) 需要一個 function。
-// 我們可以 export 一個包裝過的 init
-export function initUI() {
-    renderAll(getAdmissionYear);
-}
