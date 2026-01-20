@@ -1,23 +1,19 @@
 // ==========================================
-// report.js - 專門負責產生列印報表 HTML (修正版)
+// report.js - 修正引用路徑版
 // ==========================================
 import { state, CONSTANTS } from './store.js';
 
-// 修正 1: utils.js 只匯出它有的工具函式
-import { 
-    esc, toNum, termToLabel 
-} from './utils.js';
+// 修正 1: utils 只匯入它有的
+import { esc, toNum, termToLabel } from './utils.js';
 
-// 修正 2: termKeyOfRow 和 termOrder 其實是在 logic.js，要從這裡匯入
+// 修正 2: termKeyOfRow 和 termOrder 要從 logic.js 匯入
 import { 
-    normalizeStatus, statusRank, 
-    baseCreditSplit, 
+    normalizeStatus, statusRank, baseCreditSplit, 
     calcCreditsForSummary, getAverageStats,
     termKeyOfRow, termOrder 
 } from './logic.js';
 
-// --- Print Logic (Complex A4 Paging) ---
-
+// --- 以下程式碼保持不變 ---
 function mmToPx(mm) {
     const d = document.createElement("div");
     d.style.cssText = `position:absolute;left:-9999px;height:${mm}mm;width:1mm;`;
@@ -76,7 +72,6 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
     const metaPolicy = showMeta === "first" ? "first" : showMeta ? "all" : "none";
     const metaForPage = (p) => metaPolicy === "all" || (metaPolicy === "first" && p === 0) ? metaHtmlFull : "";
 
-    // Empty Case
     if (!mergedTrs.length) {
         const pageHtml = `
           <div class="print-page">
@@ -94,7 +89,6 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
         return pageHtml + (summaryHtml ? `<div class="print-page print-break"><div class="print-box">${titleHtml}<div class="print-summary-wrap">${summaryHtml}</div></div></div>` : "");
     }
 
-    // Measurement
     const PAGE_CONTENT_H_PX = mmToPx(262);
     const measureWrap = document.createElement("div");
     measureWrap.style.cssText = "position:fixed;left:-99999px;top:0;width:210mm;height:297mm;overflow:hidden;background:white;";
@@ -121,7 +115,7 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
     const tbody = measureWrap.querySelector(".print-table tbody");
 
     const fixedFirst = titleH + metaH + theadH;
-    const fixedOther = titleH + theadH; // No meta on subsequent pages if "first"
+    const fixedOther = titleH + theadH; 
     
     const MAX_TBODY_H_FIRST = Math.max(60, PAGE_CONTENT_H_PX - fixedFirst - 6 - SAFETY_PX);
     const MAX_TBODY_H_OTHER = Math.max(60, PAGE_CONTENT_H_PX - fixedOther - 6 - SAFETY_PX);
@@ -202,7 +196,6 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
     return out;
 }
 
-// --- Main Export Function ---
 export function buildPrintHtml(currentAdmissionYear = "114") {
     // Data Prep
     const noteParts = [];
