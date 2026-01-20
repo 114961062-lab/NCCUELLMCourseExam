@@ -1,14 +1,19 @@
 // ==========================================
-// report.js - 專門負責產生列印報表 HTML
+// report.js - 專門負責產生列印報表 HTML (修正引用版)
 // ==========================================
 import { state, CONSTANTS } from './store.js';
+
+// 修正 1: 從 utils.js 只匯入它有的東西
 import { 
-    esc, toNum, termToLabel, termKeyOfRow, termOrder
+    esc, toNum, termToLabel 
 } from './utils.js';
+
+// 修正 2: termKeyOfRow 和 termOrder 其實是在 logic.js
 import { 
     normalizeStatus, statusRank, 
     baseCreditSplit, 
-    calcCreditsForSummary, getAverageStats
+    calcCreditsForSummary, getAverageStats,
+    termKeyOfRow, termOrder 
 } from './logic.js';
 
 // --- Print Logic (Complex A4 Paging) ---
@@ -198,7 +203,6 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
 }
 
 // --- Main Export Function ---
-// currentAdmissionYear: 從 UI 傳入，用於判斷抵免課程的顯示年份
 export function buildPrintHtml(currentAdmissionYear = "114") {
     // Data Prep
     const noteParts = [];
