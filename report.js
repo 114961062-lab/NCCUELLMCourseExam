@@ -1,14 +1,14 @@
 // ==========================================
-// report.js - 專門負責產生列印報表 HTML (修正引用版)
+// report.js - 專門負責產生列印報表 HTML (修正版)
 // ==========================================
 import { state, CONSTANTS } from './store.js';
 
-// 修正 1: 從 utils.js 只匯入它有的東西
+// 修正 1: utils.js 只匯出它有的工具函式
 import { 
     esc, toNum, termToLabel 
 } from './utils.js';
 
-// 修正 2: termKeyOfRow 和 termOrder 其實是在 logic.js
+// 修正 2: termKeyOfRow 和 termOrder 其實是在 logic.js，要從這裡匯入
 import { 
     normalizeStatus, statusRank, 
     baseCreditSplit, 
