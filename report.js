@@ -11,12 +11,6 @@ import {
     calcCreditsForSummary, getAverageStats
 } from './logic.js';
 
-// --- Helper: 取得入學年度 (從 UI 傳入或預設) ---
-// 這裡不直接讀 DOM，而是透過參數傳入，保持此檔案純淨
-function getAdmissionYearStr(providedYear) {
-    return (providedYear || "114").trim();
-}
-
 // --- Print Logic (Complex A4 Paging) ---
 
 function mmToPx(mm) {
@@ -204,6 +198,7 @@ function mergeTwoColumnsRowsPaged(leftRowsHtml, leftCols, rightRowsHtml, rightCo
 }
 
 // --- Main Export Function ---
+// currentAdmissionYear: 從 UI 傳入，用於判斷抵免課程的顯示年份
 export function buildPrintHtml(currentAdmissionYear = "114") {
     // Data Prep
     const noteParts = [];
@@ -323,4 +318,67 @@ export function buildPrintHtml(currentAdmissionYear = "114") {
       <div style="margin-top:4mm; border-top:1px solid #000; padding-top:3mm; font-size:10.5pt; line-height:1.55;">
         <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10mm; margin-bottom:2mm;">
           <div style="font-weight:700;">學分摘要</div>
-          <div style="text
+          <div style="text-align:right; display:grid; justify-items:end; row-gap:1mm;">
+            <div style="font-weight:700;">畢業總學分：${CONSTANTS.GRAD_CREDITS} 學分</div>
+            <div>目前累積（已修）：${earnedTotal}｜尚差：${earnedRemain} 學分</div>
+            ${plannedTotal > 0 ? `<div>含「${esc(focusLabel)}」預計後：${projectedTotal}｜尚差：${projectedRemain} 學分</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex; gap:12mm; flex-wrap:wrap;">
+          <div style="min-width:280px;">
+            <div style="font-weight:700; margin-bottom:1mm;">A. 基礎／進階總覽</div>
+            ${earnedTotal>0 ? `
+                <div style="font-weight:700; margin-top:1mm;">（已修）</div>
+                ${lineIf('基礎課程', bDS.total, '學分', bDS.transfer>0?`（其中抵免：${bDS.transfer}）`:'')}
+                ${lineIf('進階課程', aDS.grandTotal, '學分', aDS.transferAdv>0?`（其中抵免：${aDS.transferAdv}）`:'')}
+                ${lineIf('可計入畢業總學分', earnedTotal, '學分')}
+            ` : '<div>—</div>'}
+            ${plannedTotal>0 ? `
+                <div style="font-weight:700; margin-top:2mm;">（${esc(focusLabel)} 預計）</div>
+                ${lineIf('基礎課程', bPS.total)}
+                ${lineIf('進階課程', aPS.grandTotal)}
+                ${lineIf('本學期預計取得', plannedTotal, '學分')}
+            ` : ''}
+          </div>
+          <div style="min-width:280px;">
+            <div style="font-weight:700; margin-bottom:1mm;">B. 進階學分拆項</div>
+            ${aDS.grandTotal>0 ? `
+                <div style="font-weight:700; margin-top:1mm;">（已修）</div>
+                ${lineIf('法碩專班', aDS.llmAdv)}
+                ${lineIf('法科所', aDS.techNonLang)}
+                ${lineIf('法律系碩士班', aDS.lawNonLang)}
+                ${aDS.langTotal>0 ? `<div>語文課程：${aDS.langTotal}${langCapWarn}</div>` : ''}
+                ${aDS.externalNonLang>0 ? `<div>外院學分：${aDS.externalNonLang}（認列：${externalCountedEarned}）${extCapWarn}</div>` : ''}
+                ${lineIf('抵免課程', aDS.transferAdv)}
+            ` : '<div>—</div>'}
+            ${aPS.grandTotal>0 ? `
+                <div style="font-weight:700; margin-top:2mm;">（${esc(focusLabel)} 預計）</div>
+                ${lineIf('法碩專班', aPS.llmAdv)}
+                ${lineIf('法科所', aPS.techNonLang)}
+                ${lineIf('法律系碩士班', aPS.lawNonLang)}
+                ${aPS.langTotal>0 ? `<div>語文課程：${aPS.langTotal}${langCapWarn}</div>` : ''}
+                ${aPS.externalNonLang>0 ? `<div>外院學分：${aPS.externalNonLang}（認列：${externalCountedPlan}）${extCapWarn}</div>` : ''}
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const printCss = `
+      <style>
+        .print-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+        .print-table th, .print-table td { border:1px solid #000; vertical-align:middle; padding:2px 4px; font-size:10.5pt; }
+        .print-table th { background:#f8fafc; text-align:center; padding:4px; }
+        .print-table td.center { text-align:center; }
+        .print-table td.mono { font-family:monospace; }
+        .chk { display:inline-block; width:12px; height:12px; border:1px solid #000; }
+        @media print {
+          .print-page { width:210mm !important; min-height:297mm !important; break-after:page; page-break-after:always; }
+          .print-break { break-before:page; page-break-before:always; }
+          .print-table tr, .print-summary-wrap { break-inside:avoid; page-break-inside:avoid; }
+          .print-table thead { display:table-header-group; }
+        }
+      </style>`;
+
+    return printCss + mergeTwoColumnsRowsPaged(baseRows, 5, advRows, 5, noteLine, summaryHtml, "first");
+}
