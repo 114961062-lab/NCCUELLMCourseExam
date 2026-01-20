@@ -1,5 +1,5 @@
 // ==========================================
-// store.js - 狀態管理與資料獲取
+// store.js - 狀態管理與資料獲取 (修正版)
 // ==========================================
 import { 
     parseCSV, csvUnquote, normalizeDriveUrl, toSlots, toBool, normalizeProgram, 
@@ -29,15 +29,30 @@ export const Base_CLASS_SUBJECTS_114 = [
    "刑事訴訟法", "論文寫作專題研究", "法律倫理"
 ];
 
-// --- Global Data (原本的全域變數) ---
+// 🔴 關鍵修正：將所有常數打包匯出，讓 logic.js 和 ui.js 可以使用 CONSTANTS.xxx
+export const CONSTANTS = {
+    ALL_COURSES_CSV_URL,
+    EXTERNAL_DEPT_CSV_URL,
+    STORAGE_KEY,
+    GRAD_CREDITS,
+    CAP_CROSS_TOTAL,
+    CAP_EXTERNAL,
+    CAP_LANG,
+    STATUS_DONE,
+    STATUS_PLANNED,
+    CREDIT_CLASS_SUBJECTS,
+    CREDIT_CLASS_FIXED_CREDIT
+};
+
+// --- Global Data ---
 export let allCourses = [];
-export let externalDeptMapByCode = new Map(); // code3 -> { college, name }
+export let externalDeptMapByCode = new Map(); 
 export let systemStatus = {
     coursesLoaded: false,
     coursesError: null
 };
 
-// --- Reactive State (應用程式狀態) ---
+// --- Reactive State ---
 export let state = initState();
 
 export function initState() {
@@ -52,13 +67,12 @@ export function initState() {
       eligibleCredential: "",
       creditTransferEligible: false,
       showExamAnalysis: false,
-      courses: [], // Canonical merged list
+      courses: [], 
       base: [],
       adv: [],
       externalCredits: [],
       avgMode: "term",
       avgTerm: "",
-      // 舊版兼容欄位 (暫存用，migrate 後會清空)
       examExternal: [],
       creditClass: [],
     };
@@ -68,9 +82,7 @@ export function initState() {
 export function save() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch(e) {
-        console.error("Save failed", e);
-    }
+    } catch(e) { console.error("Save failed", e); }
 }
 
 export function load() {
@@ -95,7 +107,6 @@ export function migrateState() {
       return { term: `${m[1]}${m[2]}`, name: m[3] };
     };
 
-    // 修正 base/adv 的 term 結構
     state.base = (state.base || []).map((r) => {
       const rr = { ...r };
       if (rr.term) return rr;
@@ -112,12 +123,10 @@ export function migrateState() {
       return rr;
     });
 
-    // 遷移舊的 examExternal / creditClass 到 externalCredits
     state.externalCredits = state.externalCredits || [];
     state.creditClass = state.creditClass || [];
     state.examExternal = state.examExternal || [];
 
-    // 1. 舊 creditClass
     for (const r of state.creditClass) {
       state.externalCredits.push({
         id: r.id || newUUID(),
@@ -130,7 +139,6 @@ export function migrateState() {
     }
     state.creditClass = [];
 
-    // 2. 舊 examExternal
     const isExactCreditClass = (name) => CREDIT_CLASS_SUBJECTS.includes(String(name || "").trim());
     for (const r of state.examExternal) {
       const nm = String(r?.name || "").trim();
@@ -157,7 +165,6 @@ export function migrateState() {
     }
     state.examExternal = [];
 
-    // 3. 去重
     const seen = new Set();
     state.externalCredits = (state.externalCredits || []).filter((r) => {
       const key = `${r.source}||${r.school || ""}||${r.name || ""}||${toNum(r.credit)}`;
@@ -167,14 +174,9 @@ export function migrateState() {
     });
 
     if (typeof state.externalCourseEnabled !== "boolean") state.externalCourseEnabled = false;
-    
-    // 補欄位 status (若無則 normalize)
-    // 注意: 這裡需要從外部引入 normalizeStatus, 但 utils 裡沒有 STATUS 常數依賴
-    // 簡單處理: 這裡不依賴 logic.js，直接給預設值
-    // 稍後在 main logic 執行 ensureStatusConsistency 時會再次修正
 }
 
-// --- Data Fetching Operations ---
+// --- Data Fetching ---
 
 function normalizeCourseRow(obj) {
     return {
@@ -240,7 +242,6 @@ export async function initAllCourses(url = ALL_COURSES_CSV_URL) {
         }
         allCourses = out;
         systemStatus.coursesLoaded = true;
-        console.log("[Store] All courses loaded:", allCourses.length);
     } catch (err) {
         systemStatus.coursesError = err.message;
         console.error("[Store] Failed to load courses:", err);
@@ -267,7 +268,6 @@ export async function initExternalDeptCsv() {
             if (parts.length < 3) continue;
             const [college, name, codeRaw] = parts;
             const code = sanitizeDigits3(codeRaw);
-
             if (!college || !name || !/^\d{3}$/.test(code)) continue;
 
             externalDeptMapByCode.set(code, { college, name });
@@ -276,21 +276,6 @@ export async function initExternalDeptCsv() {
         }
         return { byCollege };
     } catch(e) {
-        console.error("External Dept CSV Error:", e);
         return { byCollege: new Map() };
     }
 }
-// 在 store.js 的最底端加上這一段：
-export const CONSTANTS = {
-  ALL_COURSES_CSV_URL,
-  EXTERNAL_DEPT_CSV_URL,
-  STORAGE_KEY,
-  GRAD_CREDITS,
-  CAP_CROSS_TOTAL,
-  CAP_EXTERNAL,
-  CAP_LANG,
-  STATUS_DONE,
-  STATUS_PLANNED,
-  CREDIT_CLASS_SUBJECTS,
-  CREDIT_CLASS_FIXED_CREDIT
-};
