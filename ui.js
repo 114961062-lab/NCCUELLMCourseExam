@@ -570,6 +570,9 @@ function buildPrintHtml() {
 // --- Main Exports ---
 
 export function renderAll() {
+// 🔴 補上這一行，學號選單才會跑出來！
+    renderStudentIdOptions(); 
+
     if ($("studentName")) $("studentName").value = state.studentName;
     if ($("note")) $("note").value = state.note;
     if ($("studentId")) {
