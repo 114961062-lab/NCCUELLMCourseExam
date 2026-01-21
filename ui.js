@@ -145,23 +145,21 @@ export function bindEvents() {
     if ($("btnAddExternalToAdv")) $("btnAddExternalToAdv").addEventListener("click", addExternalToAdvanced);
     if ($("btnAddTransfer")) $("btnAddTransfer").addEventListener("click", addTransferCourse);
 
+    if ($("pickAdmissionYear")) {
+        $("pickAdmissionYear").addEventListener("change", (e) => {
+            state.admissionYear = e.target.value;
+            state.studentId = composeStudentIdFull();
+            save();
+            doRender();
+        });
+    }
+
     if ($("studentId")) {
         $("studentId").addEventListener("change", (e) => { 
-            const ay = getAdmissionYear();
-            const suffix = e.target.value.trim();
-            if(suffix) state.studentId = `${ay}9610${suffix}`;
+            state.studentId = composeStudentIdFull();
             save(); 
         });
     }
-    document.querySelectorAll('input[name="admissionYear"]').forEach(r => {
-        r.addEventListener("change", () => { 
-            const ay = r.value.trim();
-            const suffix = ($("studentId")?.value || "").trim();
-            if(suffix) state.studentId = `${ay}9610${suffix}`;
-            save(); 
-            doRender(); 
-        });
-    });
     
     const bindCheck = (id, field) => {
         if($(id)) $(id).addEventListener("change", (e) => { state[field] = e.target.checked; save(); doRender(); });
@@ -172,7 +170,7 @@ export function bindEvents() {
     bindCheck("showExamAnalysis", "showExamAnalysis");
 
     if ($("btnBuild")) $("btnBuild").addEventListener("click", () => {
-        const html = buildPrintHtml(getAdmissionYear());
+        const html = buildPrintHtml(state.admissionYear);
         const win = window.open("", "_blank");
         if(win) { win.document.write(html); win.document.close(); win.print(); }
     });
