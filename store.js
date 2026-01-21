@@ -5,7 +5,7 @@ import { newUUID } from './utils.js';
 import { CONSTANTS } from './config.js';
 import { loadAllCoursesFromCSV, loadExternalDeptCsv } from './services.js';
 
-// 重新匯出 config 的設定，方便其他模組引用
+// Exports for other modules
 export { CONSTANTS, BASE_SUBJECTS_MAP, Base_CLASS_SUBJECTS_114 } from './config.js';
 
 export let allCourses = [];
