@@ -1,6 +1,7 @@
 // ==========================================
 // view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
+// ✅ 請用這份乾淨的 Import 區塊取代原本開頭的亂成一團的 import
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
 import { BASE_SUBJECTS_MAP } from './config.js'; 
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
