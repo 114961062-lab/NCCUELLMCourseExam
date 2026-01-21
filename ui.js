@@ -9,7 +9,7 @@ import {
     normalizeStatus, inferStatusByTermKey, ensureStatusConsistency, 
     guardCrossCaps, removeCourseById, clearTrack 
 } from './logic.js';
-import { buildPrintHtml } from './report.js';
+
 
 // 🔴 匯入 View 層
 import { $, renderAll, getAdmissionYear } from './view.js';
