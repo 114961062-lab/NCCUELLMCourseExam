@@ -6,7 +6,7 @@ import { CONSTANTS } from './config.js';
 import { loadAllCoursesFromCSV, loadExternalDeptCsv } from './services.js';
 
 // Exports for other modules
-export { CONSTANTS, Base_CLASS_SUBJECTS_114 } from './config.js';
+export { CONSTANTS, BASE_SUBJECTS_MAP, Base_CLASS_SUBJECTS_114 } from './config.js';
 
 export let allCourses = [];
 export let externalDeptMapByCode = new Map();
@@ -14,7 +14,6 @@ export const systemStatus = { coursesLoaded: false, coursesError: null };
 
 function initState() {
     return {
-        // ✅ 新增：預設入學年度 (例如預設 114)
         admissionYear: "114", 
         studentName: "", studentId: "", note: "",
         eligibleExempt: false, externalCourseEnabled: false,
@@ -43,7 +42,6 @@ export function migrateState() {
         const m = String(s || "").match(/^(\d{3})-(\d)\s+(.+)$/);
         return m ? { term: `${m[1]}${m[2]}`, name: m[3] } : null;
     };
-    // Migrate Logic (Simplified)
     state.base = (state.base || []).map(r => {
         if (!r.term) { const p = parsePrefixed(r.name); if(p) { r.term = p.term; r.name = p.name; } }
         return r;
@@ -52,7 +50,6 @@ export function migrateState() {
         if (!r.term) { const p = parsePrefixed(r.name); if(p) { r.term = p.term; r.name = p.name; } }
         return r;
     });
-    // Old fields migration... (Assuming handled)
     state.externalCredits = state.externalCredits || [];
 }
 
