@@ -1,25 +1,25 @@
 // ==========================================
-// view.js - 負責所有畫面渲染 (View Layer) - 修正版
+// view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
     normalizeStatus, baseCreditSum, baseCreditSplit, advCreditSum, 
     calcCreditsForSummary, getAverageStats, currentCapWarnMsg,
-    computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesForExam,
     termOrder, termKeyOfRow
 } from './logic.js';
+import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesForExam } from './exam.js';
 
+// ... (以下所有 render 函式保持不變，直接沿用剛剛修正好的版本) ...
+// 為了版面整潔，這裡請直接使用我們前一次對話修正後的 view.js 內容
+// 唯一要注意的是上面的 import 區塊要改成我這裡寫的樣子
 // DOM Helper
 export const $ = (id) => document.getElementById(id);
 
-// 🔴 修正：直接在這裡定義，不依賴外部傳入
 export function getAdmissionYear() {
     const el = document.querySelector('input[name="admissionYear"]:checked');
     return (el?.value || "114").trim();
 }
-
-// --- Component Helpers ---
 
 function nameWithBadgeScreen(row) {
     const label = row?.isTransfer ? "抵免" : (row?.track === "base" ? "基礎" : (row?.track === "adv" ? "進階" : "課程"));
@@ -74,7 +74,6 @@ export function renderStudentIdOptions() {
     if (suffix) elId.value = suffix;
 }
 
-// 🔴 修正：不再需要參數，直接呼叫內部的 getAdmissionYear()
 export function renderTermOptionsFromCourses() {
     const pickTerm = $("pickTerm");
     const extTerm = $("extTerm");
@@ -90,7 +89,6 @@ export function renderTermOptionsFromCourses() {
     }).filter(Boolean))).filter(t => /^\d{3}[12]$/.test(String(t)));
 
     if (!terms.length) {
-        // 這裡直接用內部的 getAdmissionYear()
         const y = String(getAdmissionYear()).slice(0, 3);
         terms = [`${y}1`, `${y}2`];
     }
@@ -404,4 +402,70 @@ export function refreshExamAnalysisUI() {
         $("lawyerDetails").innerHTML = `
             <div class="mb-2 font-semibold">必含科目：${l.mustOk ? "✅ 符合" : "❌ 未符合"}</div>
             <div class="text-xs text-slate-700">民法(${l.civil.ok?"OK":"NO"})、刑法(${l.criminal.ok?"OK":"NO"})、訴訟法(${l.mustOk && (l.ms.counted||l.xs.counted) ? "OK":"NO"})</div>
-            <div class="mt-2 font-semibold">總學分：${l.totalCountedCredits} /
+            <div class="mt-2 font-semibold">總學分：${l.totalCountedCredits} / 20</div>
+            <div class="font-semibold">總學科：${l.disciplineCount} / 7</div>
+        `;
+    }
+}
+
+export function initExternalDeptDropdown() {
+    const sel = $("extDept");
+    if (!sel || !externalDeptMapByCode) return;
+    if (sel.tagName !== "SELECT") {
+        const newSel = document.createElement("select");
+        newSel.id = sel.id; newSel.className = sel.className;
+        sel.parentNode.replaceChild(newSel, sel);
+    }
+    if (sel.options.length > 1 && sel.innerHTML.includes("optgroup")) return;
+
+    const grouped = {};
+    for (const [code, val] of externalDeptMapByCode.entries()) {
+        if (!grouped[val.college]) grouped[val.college] = [];
+        grouped[val.college].push({code, name: val.name});
+    }
+    const html = [`<option value="" disabled selected>請選擇系所</option>`];
+    Object.keys(grouped).sort().forEach(col => {
+        html.push(`<optgroup label="${esc(col)}">`);
+        grouped[col].sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
+            html.push(`<option value="${item.code}">${esc(item.name)}</option>`);
+        });
+        html.push(`</optgroup>`);
+    });
+    $(sel.id).innerHTML = html.join("");
+}
+
+// 🔴 主渲染函數
+export function renderAll() {
+    if ($("studentName")) $("studentName").value = state.studentName;
+    if ($("note")) $("note").value = state.note;
+    
+    renderStudentIdOptions();
+    
+    if ($("eligibleExempt")) $("eligibleExempt").checked = state.eligibleExempt;
+    if ($("eligibleBox")) $("eligibleBox").classList.toggle("hidden", !state.eligibleExempt);
+    if ($("creditTransferEligible")) $("creditTransferEligible").checked = state.creditTransferEligible;
+    if ($("transferAddWrap")) $("transferAddWrap").classList.toggle("hidden", !state.creditTransferEligible);
+
+    renderTermOptionsFromCourses(); // 內部自己會呼叫 getAdmissionYear
+    renderCoursePicker();
+    renderFullCourseList();
+    renderTable("baseTbody", state.base, "base");
+    renderTable("advTbody", state.adv, "adv");
+
+    renderExternalCreditsList("ccTbody", "creditClass", "delCreditClass");
+    renderExternalCreditsList("examExtTbody", "schoolCredit", "delExamExt");
+    renderExternalCreditsList("externalCreditsTbody", null, "delExternalCredit");
+
+    refreshStats();
+    refreshExamAnalysisUI();
+
+    if ($("externalAddWrap")) $("externalAddWrap").classList.toggle("hidden", !state.eligibleExempt || !state.externalCourseEnabled);
+    if ($("externalCourseEnabled")) $("externalCourseEnabled").checked = state.externalCourseEnabled;
+    
+    if ($("trNameBase") && $("trNameBase").options.length <= 1) {
+        const opts = [`<option value="">(請選擇)</option>`, ...Base_CLASS_SUBJECTS_114.map(s=>`<option value="${s}">${s}</option>`)];
+        $("trNameBase").innerHTML = opts.join("");
+    }
+    
+    initExternalDeptDropdown();
+}
