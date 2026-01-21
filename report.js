@@ -1,17 +1,20 @@
 // ==========================================
-// report.js - 專門負責產生列印報表 HTML
+// report.js (修正版開頭)
 // ==========================================
 import { state, CONSTANTS } from './store.js';
+
+// 1. utils.js 只拿它有的
 import { esc, toNum, termToLabel } from './utils.js';
+
+// 2. 關鍵修正：termKeyOfRow, termOrder 改從 logic.js 拿
 import { 
     normalizeStatus, statusRank, baseCreditSplit, 
     calcCreditsForSummary, getAverageStats,
-    termKeyOfRow, termOrder 
+    termKeyOfRow, termOrder // <--- 這裡一定要有
 } from './logic.js';
 
-// --- Print Logic ---
-// ... (請直接沿用我上一則回應提供的 report.js 完整程式碼，不需要變動) ...
-// 為了避免回答太長，這裡省略中間 500 行，請確認引用路徑與 logic.js 一致
+
+
 
 // --- 以下程式碼保持不變 ---
 function mmToPx(mm) {
