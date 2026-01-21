@@ -2,7 +2,7 @@
 // view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
-import { BASE_SUBJECTS_MAP } from './config.js'; 
+import { BASE_SUBJECTS_MAP } from './config.js';
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
     normalizeStatus, baseCreditSum, baseCreditSplit, advCreditSum, 
@@ -15,9 +15,11 @@ import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesFo
 export const $ = (id) => document.getElementById(id);
 
 export function getAdmissionYear() {
+    // 優先嘗試讀取新的下拉選單
     const sel = $("pickAdmissionYear");
     if(sel) return sel.value;
     
+    // 相容舊版 radio (如果 HTML 還沒改)
     const el = document.querySelector('input[name="admissionYear"]:checked');
     return (el?.value || "114").trim();
 }
@@ -27,6 +29,7 @@ export function renderAdmissionYearPicker() {
     if (!el) return;
 
     const totalYears = CONSTANTS.YEAR_END - CONSTANTS.YEAR_START + 1;
+    // 避免重複渲染
     if (el.options.length === totalYears) {
         if (el.value !== state.admissionYear) el.value = state.admissionYear;
         return;
@@ -137,6 +140,7 @@ export function renderTermOptionsFromCourses() {
 
     const html = terms.map(t => `<option value="${esc(t)}">${esc(termToLabel(t))}</option>`).join("");
     
+    // 只在innerHTML為空或選項數量不對時才重繪
     if (pickTerm.innerHTML.length < 10 || pickTerm.options.length !== terms.length) {
         pickTerm.innerHTML = html;
         if (extTerm) extTerm.innerHTML = html;
@@ -481,7 +485,8 @@ export function renderAll() {
     if ($("creditTransferEligible")) $("creditTransferEligible").checked = state.creditTransferEligible;
     if ($("transferAddWrap")) $("transferAddWrap").classList.toggle("hidden", !state.creditTransferEligible);
 
-    renderTermOptionsFromCourses(); // 內部自己會呼叫 getAdmissionYear
+    renderAdmissionYearPicker(); // 新增：渲染年度選單
+    renderTermOptionsFromCourses();
     renderCoursePicker();
     renderFullCourseList();
     renderTable("baseTbody", state.base, "base");
