@@ -1,5 +1,5 @@
 // ==========================================
-// ui.js - 事件控制器 (Controller Layer) - 修正版
+// ui.js - 事件控制器 (Controller Layer)
 // ==========================================
 import { state, save, resetState, allCourses, externalDeptMapByCode, CONSTANTS } from './store.js';
 import { newUUID, clampGradeValue, termOfCourse, yearOfCourse, termToLabel, sanitizeDigits3, sanitizeAlnum9 } from './utils.js';
@@ -9,16 +9,8 @@ import {
 } from './logic.js';
 import { buildPrintHtml } from './report.js';
 
-// 匯入 View 層 (以及內建的 getAdmissionYear)
+// 🔴 匯入 View 層
 import { $, renderAll, getAdmissionYear } from './view.js';
-
-// 🔴 移除：ui.js 不需要自己定義 getAdmissionYear 了，直接用 view.js 的
-function composeStudentIdFull() {
-    const ay = getAdmissionYear(); // 直接呼叫 view.js 匯出的
-    const suffix = ($("studentId")?.value || "").trim();
-    if (!suffix) return "";
-    return `${ay}9610${suffix}`;
-}
 
 // --- Actions (修改 State) ---
 
@@ -64,7 +56,7 @@ function addSelectedCourse() {
         addedCount++;
     });
 
-    if (addedCount > 0) { save(); renderAll(); } // 🔴 修正：不再傳參數
+    if (addedCount > 0) { save(); renderAll(); } 
     else { alert("未新增課程 (可能已存在)。"); }
 }
 
@@ -86,7 +78,7 @@ function addExternalToAdvanced() {
     };
     guardCrossCaps(row); state.adv.push(row); state.courses.push(row);
     $("extName").value = ""; $("extCode").value = "";
-    save(); renderAll(); // 🔴 修正：不再傳參數
+    save(); renderAll();
 }
 
 function addTransferCourse() {
@@ -108,7 +100,7 @@ function addTransferCourse() {
         row.track = "adv"; state.adv.push(row);
     }
     state.courses.push(row);
-    save(); renderAll(); // 🔴 修正：不再傳參數
+    save(); renderAll();
 }
 
 // --- Bind Events ---
@@ -147,13 +139,23 @@ export function bindEvents() {
     if ($("btnAddTransfer")) $("btnAddTransfer").addEventListener("click", addTransferCourse);
 
     if ($("studentId")) {
-        $("studentId").addEventListener("change", (e) => { state.studentId = composeStudentIdFull(); save(); });
+        $("studentId").addEventListener("change", (e) => { 
+            const ay = getAdmissionYear();
+            const suffix = e.target.value.trim();
+            if(suffix) state.studentId = `${ay}9610${suffix}`;
+            save(); 
+        });
     }
     document.querySelectorAll('input[name="admissionYear"]').forEach(r => {
-        r.addEventListener("change", () => { state.studentId = composeStudentIdFull(); save(); doRender(); });
+        r.addEventListener("change", () => { 
+            const ay = r.value.trim();
+            const suffix = ($("studentId")?.value || "").trim();
+            if(suffix) state.studentId = `${ay}9610${suffix}`;
+            save(); 
+            doRender(); 
+        });
     });
     
-    // Checkboxes
     const bindCheck = (id, field) => {
         if($(id)) $(id).addEventListener("change", (e) => { state[field] = e.target.checked; save(); doRender(); });
     };
@@ -162,9 +164,8 @@ export function bindEvents() {
     bindCheck("externalCourseEnabled", "externalCourseEnabled");
     bindCheck("showExamAnalysis", "showExamAnalysis");
 
-    // Print
     if ($("btnBuild")) $("btnBuild").addEventListener("click", () => {
-        const html = buildPrintHtml(getAdmissionYear()); // 這裡還是需要傳入
+        const html = buildPrintHtml(getAdmissionYear());
         const win = window.open("", "_blank");
         if(win) { win.document.write(html); win.document.close(); win.print(); }
     });
@@ -210,6 +211,3 @@ export function bindEvents() {
         if($("trName")) $("trName").classList.toggle("hidden", isBase);
     });
 }
-
-// 匯出 renderAll 供 main 使用
-export { renderAll } from './view.js';
