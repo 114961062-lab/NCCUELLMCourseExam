@@ -1,5 +1,5 @@
 // ==========================================
-// ui.js - 事件控制器 (Controller Layer)
+// ui.js - 事件控制器 (乾淨版)
 // ==========================================
 import { state, save, resetState, allCourses, externalDeptMapByCode, CONSTANTS } from './store.js';
 import { newUUID, clampGradeValue, termOfCourse, yearOfCourse, termToLabel, sanitizeDigits3, sanitizeAlnum9 } from './utils.js';
@@ -8,8 +8,6 @@ import {
     guardCrossCaps, removeCourseById, clearTrack 
 } from './logic.js';
 import { buildPrintHtml } from './report.js';
-
-// 匯入 View 層 (只匯入一次)
 import { $, renderAll, getAdmissionYear } from './view.js';
 
 // --- Actions (修改 State) ---
