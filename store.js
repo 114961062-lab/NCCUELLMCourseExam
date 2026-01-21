@@ -1,5 +1,5 @@
 // ==========================================
-// store.js - 狀態管理
+// store.js - 狀態管理 (乾淨版)
 // ==========================================
 import { newUUID } from './utils.js';
 import { CONSTANTS } from './config.js';
