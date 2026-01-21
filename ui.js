@@ -1,22 +1,19 @@
 // ==========================================
 // ui.js - 事件控制器 (Controller Layer)
 // ==========================================
-import { state, save } from './store.js';
-import { $, renderAll } from './view.js';
-import { buildPrintHtml } from './report.js';
+import { state, save, resetState, allCourses, externalDeptMapByCode, CONSTANTS } from './store.js';
 import { newUUID, clampGradeValue, termOfCourse, yearOfCourse, termToLabel, sanitizeDigits3, sanitizeAlnum9 } from './utils.js';
 import { 
     normalizeStatus, inferStatusByTermKey, ensureStatusConsistency, 
     guardCrossCaps, removeCourseById, clearTrack 
 } from './logic.js';
+import { buildPrintHtml } from './report.js';
 
-
-// 🔴 匯入 View 層
+// 匯入 View 層 (只匯入一次)
 import { $, renderAll, getAdmissionYear } from './view.js';
 
 // --- Actions (修改 State) ---
 
-// ✅ 邏輯更新：組學號 (依賴 state.admissionYear)
 function composeStudentIdFull() {
     const ay = state.admissionYear || "114";
     const suffix = ($("studentId")?.value || "").trim();
@@ -175,10 +172,10 @@ export function bindEvents() {
     bindCheck("showExamAnalysis", "showExamAnalysis");
 
     if ($("btnBuild")) $("btnBuild").addEventListener("click", () => {
-        // ✅ 傳入目前的 state.admissionYear
-        const html = buildPrintHtml(state.admissionYear);
+        const html = buildPrintHtml(getAdmissionYear());
         const win = window.open("", "_blank");
         if(win) { win.document.write(html); win.document.close(); win.print(); }
+    });
     
     if ($("btnReset")) $("btnReset").addEventListener("click", () => {
         if(confirm("確定重置?")) {
