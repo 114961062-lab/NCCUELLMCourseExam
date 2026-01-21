@@ -1,6 +1,9 @@
 // ==========================================
 // view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
+import { state, CONSTANTS } from './store.js'; // 確保引入 CONSTANTS
+import { BASE_SUBJECTS_MAP } from './config.js'; // 引入科目表
+import { esc, pad2, termToLabel } from './utils.js';
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
@@ -16,9 +19,74 @@ import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesFo
 // DOM Helper
 export const $ = (id) => document.getElementById(id);
 
-export function getAdmissionYear() {
-    const el = document.querySelector('input[name="admissionYear"]:checked');
-    return (el?.value || "114").trim();
+export function renderAdmissionYearPicker() {
+    const el = $("pickAdmissionYear"); // 請確認 HTML 有這個 ID (原本可能是 radio，建議改 select)
+    if (!el) return;
+
+    // 如果已經有選項且長度正確，只更新值
+    const totalYears = CONSTANTS.YEAR_END - CONSTANTS.YEAR_START + 1;
+    if (el.options.length === totalYears) {
+        if (el.value !== state.admissionYear) el.value = state.admissionYear;
+        return;
+    }
+
+    const opts = [];
+    for (let y = CONSTANTS.YEAR_START; y <= CONSTANTS.YEAR_END; y++) {
+        const val = String(y);
+        const sel = val === state.admissionYear ? "selected" : "";
+        opts.push(`<option value="${val}" ${sel}>${val} 學年度</option>`);
+    }
+    el.innerHTML = opts.join("");
+}
+
+// ✅ 修改：根據 state.admissionYear 渲染基礎科目選單
+export function renderTransferBaseNamePicker() {
+    const el = $("trNameBase");
+    if (!el) return;
+
+    // 1. 取得該年度的科目表，如果沒有就拿 default
+    const year = state.admissionYear || "114";
+    const subjects = BASE_SUBJECTS_MAP[year] || BASE_SUBJECTS_MAP["default"];
+
+    const opts = [`<option value="">(請選擇)</option>`];
+    subjects.forEach(s => {
+        opts.push(`<option value="${esc(s)}">${esc(s)}</option>`);
+    });
+    
+    // 簡單防呆：避免重複一直重繪導致 UX 不好 (這步可省略，視效能而定)
+    el.innerHTML = opts.join("");
+}
+
+// ✅ 修改：renderAll 統一呼叫
+export function renderAll() {
+    // 1. 基本欄位
+    if ($("studentName")) $("studentName").value = state.studentName;
+    if ($("note")) $("note").value = state.note;
+    
+    // 2. 年度與學號
+    renderAdmissionYearPicker(); // 渲染年度下拉
+    renderStudentIdOptions();    // 渲染學號後兩碼
+    
+    // 學號欄位自動組合顯示 (UI 顯示用，實際邏輯在 ui.js)
+    if ($("studentIdPrefix")) $("studentIdPrefix").textContent = state.admissionYear + "9610";
+
+    // ... (中間 checkbox 邏輯保持不變) ...
+
+    // 3. 基礎科目下拉 (依據年度更新)
+    renderTransferBaseNamePicker();
+
+    // ... (其餘表格渲染 logic 保持不變) ...
+    renderTermOptionsFromCourses();
+    renderCoursePicker();
+    renderFullCourseList();
+    renderTable("baseTbody", state.base, "base");
+    renderTable("advTbody", state.adv, "adv");
+    renderExternalCreditsList("ccTbody", "creditClass", "delCreditClass");
+    renderExternalCreditsList("examExtTbody", "schoolCredit", "delExamExt");
+    renderExternalCreditsList("externalCreditsTbody", null, "delExternalCredit");
+    refreshStats();
+    refreshExamAnalysisUI();
+    initExternalDeptDropdown();
 }
 
 function nameWithBadgeScreen(row) {
