@@ -2,7 +2,7 @@
 // view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
-import { BASE_SUBJECTS_MAP } from './config.js';
+import { BASE_SUBJECTS_MAP } from './config.js'; 
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
     normalizeStatus, baseCreditSum, baseCreditSplit, advCreditSum, 
@@ -15,11 +15,9 @@ import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesFo
 export const $ = (id) => document.getElementById(id);
 
 export function getAdmissionYear() {
-    // 優先嘗試讀取新的下拉選單
     const sel = $("pickAdmissionYear");
     if(sel) return sel.value;
     
-    // 相容舊版 radio
     const el = document.querySelector('input[name="admissionYear"]:checked');
     return (el?.value || "114").trim();
 }
@@ -29,7 +27,6 @@ export function renderAdmissionYearPicker() {
     if (!el) return;
 
     const totalYears = CONSTANTS.YEAR_END - CONSTANTS.YEAR_START + 1;
-    // 避免重複渲染
     if (el.options.length === totalYears) {
         if (el.value !== state.admissionYear) el.value = state.admissionYear;
         return;
@@ -428,4 +425,80 @@ export function refreshExamAnalysisUI() {
         $("judgeDetails").innerHTML = j.detail.map(x => `
             <div class="mb-2">
               <div class="font-semibold">${x.ok?"✅":"❌"} ${esc(x.subject)} (${toNum(x.counted)}/3)</div>
-              <div class="text-xs text-slate-700 mt-1">${esc(
+              <div class="text-xs text-slate-700 mt-1">${esc(x.used.join("；"))}</div>
+            </div>
+        `).join("");
+    }
+    if ($("lawyerResult")) {
+        $("lawyerResult").textContent = l.pass ? "✅ 目前符合" : "⚠ 未達門檻";
+        $("lawyerResult").className = l.pass ? "px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800" : "px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800";
+    }
+    if ($("lawyerDetails")) {
+        $("lawyerDetails").innerHTML = `
+            <div class="mb-2 font-semibold">必含科目：${l.mustOk ? "✅ 符合" : "❌ 未符合"}</div>
+            <div class="text-xs text-slate-700">民法(${l.civil.ok?"OK":"NO"})、刑法(${l.criminal.ok?"OK":"NO"})、訴訟法(${l.mustOk && (l.ms.counted||l.xs.counted) ? "OK":"NO"})</div>
+            <div class="mt-2 font-semibold">總學分：${l.totalCountedCredits} / 20</div>
+            <div class="font-semibold">總學科：${l.disciplineCount} / 7</div>
+        `;
+    }
+}
+
+export function initExternalDeptDropdown() {
+    const sel = $("extDept");
+    if (!sel || !externalDeptMapByCode) return;
+    if (sel.tagName !== "SELECT") {
+        const newSel = document.createElement("select");
+        newSel.id = sel.id; newSel.className = sel.className;
+        sel.parentNode.replaceChild(newSel, sel);
+    }
+    if (sel.options.length > 1 && sel.innerHTML.includes("optgroup")) return;
+
+    const grouped = {};
+    for (const [code, val] of externalDeptMapByCode.entries()) {
+        if (!grouped[val.college]) grouped[val.college] = [];
+        grouped[val.college].push({code, name: val.name});
+    }
+    const html = [`<option value="" disabled selected>請選擇系所</option>`];
+    Object.keys(grouped).sort().forEach(col => {
+        html.push(`<optgroup label="${esc(col)}">`);
+        grouped[col].sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
+            html.push(`<option value="${item.code}">${esc(item.name)}</option>`);
+        });
+        html.push(`</optgroup>`);
+    });
+    $(sel.id).innerHTML = html.join("");
+}
+
+// 🔴 主渲染函數
+export function renderAll() {
+    if ($("studentName")) $("studentName").value = state.studentName;
+    if ($("note")) $("note").value = state.note;
+    
+    renderStudentIdOptions();
+    
+    if ($("eligibleExempt")) $("eligibleExempt").checked = state.eligibleExempt;
+    if ($("eligibleBox")) $("eligibleBox").classList.toggle("hidden", !state.eligibleExempt);
+    if ($("creditTransferEligible")) $("creditTransferEligible").checked = state.creditTransferEligible;
+    if ($("transferAddWrap")) $("transferAddWrap").classList.toggle("hidden", !state.creditTransferEligible);
+
+    renderTermOptionsFromCourses(); // 內部自己會呼叫 getAdmissionYear
+    renderCoursePicker();
+    renderFullCourseList();
+    renderTable("baseTbody", state.base, "base");
+    renderTable("advTbody", state.adv, "adv");
+
+    renderExternalCreditsList("ccTbody", "creditClass", "delCreditClass");
+    renderExternalCreditsList("examExtTbody", "schoolCredit", "delExamExt");
+    renderExternalCreditsList("externalCreditsTbody", null, "delExternalCredit");
+
+    refreshStats();
+    refreshExamAnalysisUI();
+
+    if ($("externalAddWrap")) $("externalAddWrap").classList.toggle("hidden", !state.eligibleExempt || !state.externalCourseEnabled);
+    if ($("externalCourseEnabled")) $("externalCourseEnabled").checked = state.externalCourseEnabled;
+    
+    // 渲染基礎科目選單
+    renderTransferBaseNamePicker();
+    
+    initExternalDeptDropdown();
+}
