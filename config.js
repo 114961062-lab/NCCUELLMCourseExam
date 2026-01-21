@@ -1,29 +1,42 @@
 // ==========================================
-// config.js - 靜態設定與常數
+// config.js
 // ==========================================
 export const ALL_COURSES_CSV_URL = "https://raw.githubusercontent.com/114961062-lab/NCCUELLMCourseExam/main/nccuellmcourse.csv";
 export const EXTERNAL_DEPT_CSV_URL = "https://raw.githubusercontent.com/114961062-lab/NCCUELLMCourseExam/29a9b5e2e7557832ba6a8862809c00bbd87288a5/nccu_master_dept_nolaw.csv";
 
 export const CONSTANTS = {
-    STORAGE_KEY: "nccu_law_checklist_print_v8_integrated",
+    STORAGE_KEY: "nccu_law_checklist_v9_dynamic", // 建議改個 key 避免舊資料衝突
     GRAD_CREDITS: 54,
     CAP_CROSS_TOTAL: 18,
     CAP_EXTERNAL: 6,
     CAP_LANG: 3,
+    // ✅ 新增：支援的入學年度範圍
+    YEAR_START: 109,
+    YEAR_END: 115
 };
 
-export const Base_CLASS_SUBJECTS_114 = [
+// ✅ 新增：通用基礎科目 (若每年都一樣就用這個)
+const COMMON_BASE_SUBJECTS = [
     "民法總則", "民法債編總論", "民法債編各論", "物權法", "刑法總則", "刑法分則",
     "憲法", "行政法", "公司法", "民事訴訟法", "刑事訴訟法", "論文寫作專題研究", "法律倫理"
 ];
 
+// ✅ 新增：年度對照表 (如果某年科目不同，可以在這裡覆蓋)
+export const BASE_SUBJECTS_MAP = {
+    "default": COMMON_BASE_SUBJECTS,
+    "109": COMMON_BASE_SUBJECTS, // 範例：若 109 跟通用一樣
+    // "115": [ ... ] // 範例：若 115 有新增科目可在此定義
+};
+
+// 為了相容舊程式，保留這個 export (但指向 default)
+export const Base_CLASS_SUBJECTS_114 = COMMON_BASE_SUBJECTS;
+
+// ... (其他 export 如 CREDIT_CLASS_SUBJECTS 保持不變) ...
 export const CREDIT_CLASS_SUBJECTS = [
     "民法", "刑法", "刑事訴訟法", "民事訴訟法", "商事法", 
     "行政法", "強制執行法", "智慧財產權法", "證券交易法", "勞動法"
 ];
-
 export const CREDIT_CLASS_FIXED_CREDIT = 3;
-
 export const ELIGIBLE_DEGREE_OPTIONS = {
     "國立政治大學：法律學系": "法學學士",
     "國立臺灣大學：法律學系": "法學學士",
