@@ -8,6 +8,8 @@ import {
     guardCrossCaps, removeCourseById, clearTrack 
 } from './logic.js';
 import { buildPrintHtml } from './report.js';
+
+// 匯入 View 層 (只匯入一次)
 import { $, renderAll, getAdmissionYear } from './view.js';
 
 // --- Actions (修改 State) ---
@@ -143,23 +145,21 @@ export function bindEvents() {
     if ($("btnAddExternalToAdv")) $("btnAddExternalToAdv").addEventListener("click", addExternalToAdvanced);
     if ($("btnAddTransfer")) $("btnAddTransfer").addEventListener("click", addTransferCourse);
 
+    if ($("pickAdmissionYear")) {
+        $("pickAdmissionYear").addEventListener("change", (e) => {
+            state.admissionYear = e.target.value;
+            state.studentId = composeStudentIdFull();
+            save();
+            doRender();
+        });
+    }
+
     if ($("studentId")) {
         $("studentId").addEventListener("change", (e) => { 
-            const ay = getAdmissionYear();
-            const suffix = e.target.value.trim();
-            if(suffix) state.studentId = `${ay}9610${suffix}`;
+            state.studentId = composeStudentIdFull();
             save(); 
         });
     }
-    document.querySelectorAll('input[name="admissionYear"]').forEach(r => {
-        r.addEventListener("change", () => { 
-            const ay = r.value.trim();
-            const suffix = ($("studentId")?.value || "").trim();
-            if(suffix) state.studentId = `${ay}9610${suffix}`;
-            save(); 
-            doRender(); 
-        });
-    });
     
     const bindCheck = (id, field) => {
         if($(id)) $(id).addEventListener("change", (e) => { state[field] = e.target.checked; save(); doRender(); });
@@ -169,7 +169,6 @@ export function bindEvents() {
     bindCheck("externalCourseEnabled", "externalCourseEnabled");
     bindCheck("showExamAnalysis", "showExamAnalysis");
 
-    // 🔴 這裡修復了原本缺失的結尾括號
     if ($("btnBuild")) $("btnBuild").addEventListener("click", () => {
         const html = buildPrintHtml(state.admissionYear);
         const win = window.open("", "_blank");
@@ -183,15 +182,6 @@ export function bindEvents() {
             location.reload();
         }
     });
-
-    if ($("pickAdmissionYear")) {
-        $("pickAdmissionYear").addEventListener("change", (e) => {
-            state.admissionYear = e.target.value;
-            state.studentId = composeStudentIdFull();
-            save();
-            doRender();
-        });
-    }
 
     document.addEventListener("change", (e) => {
         const el = e.target;
