@@ -1,5 +1,5 @@
 // ==========================================
-// view.js - 負責所有畫面渲染 (乾淨版)
+// view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
 import { BASE_SUBJECTS_MAP } from './config.js';
@@ -11,6 +11,7 @@ import {
 } from './logic.js';
 import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesForExam } from './exam.js';
 
+// DOM Helper
 export const $ = (id) => document.getElementById(id);
 
 export function getAdmissionYear() {
@@ -62,6 +63,7 @@ function nameWithBadgeScreen(row) {
     else if (label === "進階") cls = "bg-indigo-50 text-indigo-700 border-indigo-200";
 
     const badge = `<span class="inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-bold shrink-0 ${cls}">${esc(label)}</span>`;
+    
     let display = row?.name || "";
     if (row?.isTransfer) {
         const y = String(row.transferYear || "").trim();
@@ -82,6 +84,8 @@ function deptLabel(program) {
     return program || "";
 }
 
+// --- Render Functions ---
+
 export function renderStudentIdOptions() {
     const elId = $("studentId");
     if (!elId) return;
@@ -91,12 +95,14 @@ export function renderStudentIdOptions() {
         if (suffix && elId.value !== suffix) elId.value = suffix;
         return;
     }
+
     const opts = [`<option value="">1～70</option>`];
     for (let i = 1; i <= 70; i++) {
         const v = pad2(i);
         opts.push(`<option value="${v}">${i}</option>`);
     }
     elId.innerHTML = opts.join("");
+    
     const full = String(state.studentId || "").trim();
     const suffix = full.match(/(\d{2})$/)?.[1] || "";
     if (suffix) elId.value = suffix;
@@ -474,7 +480,7 @@ export function renderAll() {
     if ($("creditTransferEligible")) $("creditTransferEligible").checked = state.creditTransferEligible;
     if ($("transferAddWrap")) $("transferAddWrap").classList.toggle("hidden", !state.creditTransferEligible);
 
-    renderAdmissionYearPicker();
+    renderAdmissionYearPicker(); // 新增：渲染年度選單
     renderTermOptionsFromCourses();
     renderCoursePicker();
     renderFullCourseList();
@@ -491,6 +497,7 @@ export function renderAll() {
     if ($("externalAddWrap")) $("externalAddWrap").classList.toggle("hidden", !state.eligibleExempt || !state.externalCourseEnabled);
     if ($("externalCourseEnabled")) $("externalCourseEnabled").checked = state.externalCourseEnabled;
     
+    // 渲染基礎科目選單
     renderTransferBaseNamePicker();
     
     initExternalDeptDropdown();
