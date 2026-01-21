@@ -1,10 +1,8 @@
 // ==========================================
 // view.js - 負責所有畫面渲染 (View Layer)
 // ==========================================
-import { state, CONSTANTS } from './store.js'; // 確保引入 CONSTANTS
-import { BASE_SUBJECTS_MAP } from './config.js'; // 引入科目表
-import { esc, pad2, termToLabel } from './utils.js';
 import { state, allCourses, externalDeptMapByCode, CONSTANTS, systemStatus, Base_CLASS_SUBJECTS_114 } from './store.js';
+import { BASE_SUBJECTS_MAP } from './config.js'; 
 import { esc, toNum, termToLabel, termLabelForCourse, yearOfCourse, pad2 } from './utils.js';
 import { 
     normalizeStatus, baseCreditSum, baseCreditSplit, advCreditSum, 
@@ -12,7 +10,6 @@ import {
     termOrder, termKeyOfRow
 } from './logic.js';
 import { computeJudgeEligibility, computeLawyerEligibility, getAllTakenCoursesForExam } from './exam.js';
-
 // ... (以下所有 render 函式保持不變，直接沿用剛剛修正好的版本) ...
 // 為了版面整潔，這裡請直接使用我們前一次對話修正後的 view.js 內容
 // 唯一要注意的是上面的 import 區塊要改成我這裡寫的樣子
