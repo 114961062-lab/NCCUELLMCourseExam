@@ -14,6 +14,8 @@ export function normalizeStatus(v) { return v === STATUS_PLANNED ? STATUS_PLANNE
 export function statusLabel(v) { return v === STATUS_PLANNED ? "預計" : "已修"; }
 export function statusRank(v) { return v === STATUS_PLANNED ? 1 : 0; }
 
+// logic.js 的最下方補上：
+
 export function termKeyOfRow(r) {
     if (!r) return "";
     const t = String(r.term || "").trim();
@@ -160,3 +162,4 @@ export function rebuildViews() {
     state.base = c.filter(r => r.track === 'base');
     state.adv = c.filter(r => r.track === 'adv');
 }
+
