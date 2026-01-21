@@ -14,6 +14,8 @@ export const systemStatus = { coursesLoaded: false, coursesError: null };
 
 function initState() {
     return {
+        // ✅ 新增：預設入學年度 (例如預設 114)
+        admissionYear: "114", 
         studentName: "", studentId: "", note: "",
         eligibleExempt: false, externalCourseEnabled: false,
         eligibleType: "degree", eligibleDegree: "", eligibleCredential: "",
@@ -70,3 +72,10 @@ export async function initExternalDeptCsv() {
         externalDeptMapByCode = await loadExternalDeptCsv();
     } catch (e) { console.error("External Dept CSV Error:", e); }
 }
+export let state = initState();
+export let allCourses = [];
+export let externalDeptMapByCode = new Map();
+export const systemStatus = { coursesLoaded: false, coursesError: null };
+export { CONSTANTS, BASE_SUBJECTS_MAP } from './config.js'; // 記得 export 新的 MAP
+export { save, load, resetState, migrateState, initAllCourses, initExternalDeptCsv } from './store.js'; // 這裡維持原本邏輯即可
+// 注意：上面那行是用原本的內容，不用真的寫 export { ... } from './store.js'，保持原本的 function 定義即可。
